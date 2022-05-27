@@ -1,4 +1,4 @@
-specVersion: 0.0.1
+specVersion: 0.0.4
 schema:
   file: ./schema.graphql
 dataSources:
@@ -39,3 +39,22 @@ dataSources:
         - event: Withdraw(indexed address,indexed uint256,indexed uint256)
           handler: handleWithdraw
       file: ./src/controller.ts
+  - kind: ethereum
+    name: ControllerView
+    network: matic
+    source:
+      address: "0xC69334272cAE03986B4d9e5FC6C3897934E2D7Ef"
+      abi: ControllerView
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - OwnershipTransferred
+      abis:
+        - name: ControllerView
+          file: ./abis/ControllerView.json 
+      eventHandlers:
+        - event: OwnershipTransferred(indexed address,indexed address)
+          handler: handleOwnershipTransferred   
+      file: ./src/controllerView.ts

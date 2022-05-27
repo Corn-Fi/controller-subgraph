@@ -1,6 +1,6 @@
-import { BigInt } from "@graphprotocol/graph-ts"
+import { Address, BigInt, dataSource } from "@graphprotocol/graph-ts"
 import {
-  Controller,
+  Controller as ControllerContract,
   CreateOrder,
   CreateTrade,
   FillOrder,
@@ -8,78 +8,134 @@ import {
   Paused,
   Unpaused,
   Withdraw
-} from "../generated/Controller/Controller"
-import { ExampleEntity } from "../generated/schema"
+} from "../generated/undefined/Controller"
+import { Controller, Order, Trade, User, ERC20, StrategyToken, Strategy } from "../generated/schema"
 
-export function handleCreateOrder(event: CreateOrder): void {
-  // Entities can be loaded from the store using a string ID; this ID
-  // needs to be unique across all entities of the same type
-  let entity = ExampleEntity.load(event.transaction.from.toHex())
+const ADDRESS_ZERO = Address.fromString('0x0000000000000000000000000000000000000000')
+const BIG_INT_ONE = BigInt.fromI32(1)
+const BIG_INT_ZERO = BigInt.fromI32(0)
 
-  // Entities only exist after they have been saved to the store;
-  // `null` checks allow to create entities on demand
-  if (!entity) {
-    entity = new ExampleEntity(event.transaction.from.toHex())
-
-    // Entity fields can be set using simple assignments
-    entity.count = BigInt.fromI32(0)
+export function fetchController(): Controller {
+  let controller = Controller.load(dataSource.address().toString())
+  if(controller === null) {
+    controller = new Controller(dataSource.address().toString())
+    controller.owner = ADDRESS_ZERO
+    controller.save()
   }
-
-  // BigInt and BigDecimal math are supported
-  entity.count = entity.count + BigInt.fromI32(1)
-
-  // Entity fields can be set based on event parameters
-  entity._creator = event.params._creator
-  entity._vaultId = event.params._vaultId
-
-  // Entities can be written to the store with `.save()`
-  entity.save()
-
-  // Note: If a handler doesn't require existing field values, it is faster
-  // _not_ to load the entity from the store. Instead, create it fresh with
-  // `new Entity(...)`, set the fields that should be updated and save the
-  // entity back to the store. Fields that were not set or unset remain
-  // unchanged, allowing for partial updates to be applied.
-
-  // It is also possible to access smart contracts from mappings. For
-  // example, the contract that has emitted the event can be connected to
-  // with:
-  //
-  // let contract = Contract.bind(event.address)
-  //
-  // The following functions can then be called on this contract to access
-  // state variables and other data:
-  //
-  // - contract.ACTIVE_VAULT(...)
-  // - contract.DEACTIVATED_VAULT(...)
-  // - contract.DepositFees(...)
-  // - contract.ETH(...)
-  // - contract.Fees(...)
-  // - contract.GasTank(...)
-  // - contract.GasToken(...)
-  // - contract.Gelato(...)
-  // - contract.NOT_A_VAULT(...)
-  // - contract.PokeMe(...)
-  // - contract.Resolver(...)
-  // - contract.SLIPPAGE_BASE_POINTS(...)
-  // - contract.SLIPPAGE_POINTS(...)
-  // - contract.activeRouters(...)
-  // - contract.gelato(...)
-  // - contract.holdingStrategies(...)
-  // - contract.owner(...)
-  // - contract.paused(...)
-  // - contract.priceMultiplier(...)
-  // - contract.routers(...)
-  // - contract.slippage(...)
-  // - contract.taskIds(...)
-  // - contract.tokenMaxGas(...)
-  // - contract.vault(...)
-  // - contract.vaultId(...)
-  // - contract.vaults(...)
-  // - contract.vaultsLength(...)
+  return controller as Controller
 }
 
-export function handleCreateTrade(event: CreateTrade): void {}
+
+// type Order @entity {
+//   # id = strategy ID "-" order ID
+//   id: ID!
+
+//   orderId: BigInt!
+
+//   trade: Trade!
+  
+//   fromToken: Bytes!
+//   toToken: Bytes!
+//   amountIn: BigInt!
+//   desiredAmountOut: BigInt!
+//   amountOut: BigInt!
+//   expiration: BigInt!
+
+//   open: Boolean!
+//   timestamp: BigInt!
+// }
+
+
+export function fetchOrder(strategyId: BigInt, tokenId: BigInt, tradeId: BigInt, orderId: BigInt): Order {
+  const id = strategyId.toString().concat("-").concat(orderId.toString())
+  const controller = ControllerContract.bind(dataSource.address())
+  controller
+  let trade = fetchTrade(strategyId, tokenId, tradeId)
+  let order = Order.load(id)
+  if(order === null) {
+    order = new Order(id)
+    order.trade = trade.id
+    order.fromToken 
+  }
+}
+
+export function fetchTrade(strategyId: BigInt, tokenId: BigInt, tradeId: BigInt): Trade {
+  
+}
+
+
+// type User @entity {
+//   id: ID!
+
+//   controller: Controller!
+//   strategyTokens: [StrategyToken!] @derivedfrom(field: "owner")
+// }
+
+
+export function fetchUser(address: Address): User {
+  const controller = fetchController()
+  let user = User.load(address.toString())
+  if(user === null) {
+    user = new User(address.toString())
+    user.controller = controller.id
+    user.save()
+  }
+  return user as User
+}
+
+export function fetchERC20(address: Address, strategyId: BigInt, strategyTokenId: BigInt): ERC20 {
+  const id = address.toString().concat("-").concat(strategyId.toString()).concat("-").concat(strategyTokenId.toString())
+  const strategyToken = fetchStrategyToken(strategyId, strategyTokenId)
+  let erc20 = ERC20.load(id)
+  if(erc20 === null) {
+    erc20 = new ERC20(id)
+    erc20.address = address
+    erc20.owner = ADDRESS_ZERO
+    erc20.amount = BIG_INT_ZERO
+    erc20.strategyToken = strategyToken.id
+    erc20.save()
+  }
+  return erc20 as ERC20
+}
+
+export function fetchStrategyToken(strategyId: BigInt, tokenId: BigInt): StrategyToken {
+  const id = strategyId.toString().concat("-").concat(tokenId.toString())
+
+  const strategy = fetchStrategy(strategyId)
+  let strategyToken = StrategyToken.load(id)
+  if(strategyToken === null) {
+    strategyToken = new StrategyToken(id)
+    strategyToken.tokenId = tokenId
+    strategyToken.strategy = strategy.id
+    strategyToken.owner = ADDRESS_ZERO 
+    strategyToken.save()
+  }
+  return strategyToken as StrategyToken
+}
+
+export function fetchStrategy(strategyId: BigInt): Strategy {
+  let strategy = Strategy.load(strategyId.toString())
+  if(strategy === null) {
+    strategy = new Strategy(strategyId.toString())
+    strategy.controller = dataSource.address().toString()
+    strategy.tokenCount = BIG_INT_ONE
+  }
+  strategy.save()
+  return strategy as Strategy
+}
+
+
+
+
+
+
+export function handleCreateOrder(event: CreateOrder): void {
+  let order = fetchOrder(event.params._vaultId, event.params._orderId, )
+}
+
+export function handleCreateTrade(event: CreateTrade): void {
+
+}
 
 export function handleFillOrder(event: FillOrder): void {}
 
