@@ -1,0 +1,64 @@
+specVersion: 0.0.5
+schema:
+  file: schema.graphql
+dataSources:
+  - kind: ethereum
+    name: undefined
+    network: matic
+    source:
+      address: "0x678753f5b53bfbF1d4dCfBB0F33aB5C2161edDF2"
+      abi: Controller
+      startBlock: 28528975
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - CreateOrder
+        - CreateTrade
+        - FillOrder
+        - OwnershipTransferred
+        - Paused
+        - Unpaused
+        - Withdraw
+      abis:
+        - name: Controller
+          file: undefined\abis\Controller.json
+        - name: ControllerView
+          file: undefined\abis\ControllerView.json
+      eventHandlers:
+        - event: CreateOrder(indexed address,indexed uint256,uint256)
+          handler: handleCreateOrder
+        - event: CreateTrade(indexed address,indexed uint256,uint256)
+          handler: handleCreateTrade
+        - event: FillOrder(indexed address,indexed uint256,indexed uint256,uint256)
+          handler: handleFillOrder
+        - event: OwnershipTransferred(indexed address,indexed address)
+          handler: handleOwnershipTransferred
+        - event: Paused(address)
+          handler: handlePaused
+        - event: Unpaused(address)
+          handler: handleUnpaused
+        - event: Withdraw(indexed address,indexed uint256,indexed uint256)
+          handler: handleWithdraw
+      file: undefined\undefined.wasm
+  - kind: ethereum
+    name: ControllerView
+    network: matic
+    source:
+      address: "0xC69334272cAE03986B4d9e5FC6C3897934E2D7Ef"
+      abi: ControllerView
+      startBlock: 28528975
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - OwnershipTransferred
+      abis:
+        - name: ControllerView
+          file: ControllerView\abis\ControllerView.json
+      eventHandlers:
+        - event: OwnershipTransferred(indexed address,indexed address)
+          handler: handleOwnershipTransferred
+      file: ControllerView\ControllerView.wasm

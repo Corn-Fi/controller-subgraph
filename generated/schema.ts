@@ -109,15 +109,6 @@ export class Order extends Entity {
     this.set("orderId", Value.fromBigInt(value));
   }
 
-  get trade(): string {
-    let value = this.get("trade");
-    return value!.toString();
-  }
-
-  set trade(value: string) {
-    this.set("trade", Value.fromString(value));
-  }
-
   get fromToken(): Bytes {
     let value = this.get("fromToken");
     return value!.toBytes();

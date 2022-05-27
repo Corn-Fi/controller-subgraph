@@ -1,4 +1,4 @@
-specVersion: 0.0.4
+specVersion: 0.0.5
 schema:
   file: ./schema.graphql
 dataSources:
@@ -8,6 +8,7 @@ dataSources:
     source:
       address: "0x678753f5b53bfbF1d4dCfBB0F33aB5C2161edDF2"
       abi: Controller
+      startBlock: 28528975
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
@@ -23,6 +24,8 @@ dataSources:
       abis:
         - name: Controller
           file: ./abis/Controller.json
+        - name: ControllerView
+          file: ./abis/ControllerView.json
       eventHandlers:
         - event: CreateOrder(indexed address,indexed uint256,uint256)
           handler: handleCreateOrder
@@ -45,6 +48,7 @@ dataSources:
     source:
       address: "0xC69334272cAE03986B4d9e5FC6C3897934E2D7Ef"
       abi: ControllerView
+      startBlock: 28528975
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
