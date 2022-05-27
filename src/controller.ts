@@ -53,6 +53,7 @@ export function fetchOrder(strategyId: BigInt, orderId: BigInt): Order {
   const id = strategyId.toString().concat("-").concat(orderId.toString())
   const controllerView = ControllerView.bind(CONTROLLER_VIEW)
   const orderData = controllerView.viewOrder(strategyId, orderId)
+  const strategy = fetchStrategy(strategyId)
     
   let trade = fetchTrade(strategyId, orderData.tokenId, ADDRESS_ZERO)
   let order = Order.load(id)
@@ -68,6 +69,8 @@ export function fetchOrder(strategyId: BigInt, orderId: BigInt): Order {
     order.expiration = orderData.times[0]
     order.open = true
     order.timestamp = orderData.timestamp
+    order.owner = ADDRESS_ZERO
+    order.strategy = strategy.id
     order.save()
   }
   return order as Order
@@ -173,7 +176,9 @@ export function fetchStrategy(strategyId: BigInt): Strategy {
 
 export function handleCreateOrder(event: CreateOrder): void {
   fetchUser(event.params._creator)
-  fetchOrder(event.params._vaultId, event.params._orderId)
+  let order = fetchOrder(event.params._vaultId, event.params._orderId)
+  order.owner = event.params._creator
+  order.save()
 }
 
 export function handleCreateTrade(event: CreateTrade): void {

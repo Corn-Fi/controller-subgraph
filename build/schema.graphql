@@ -22,6 +22,9 @@ type Order @entity {
 
   open: Boolean!
   timestamp: BigInt!
+
+  owner: Bytes!
+  strategy: Strategy!
 }
 
 type Trade @entity {

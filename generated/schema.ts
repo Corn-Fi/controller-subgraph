@@ -189,6 +189,24 @@ export class Order extends Entity {
   set timestamp(value: BigInt) {
     this.set("timestamp", Value.fromBigInt(value));
   }
+
+  get owner(): Bytes {
+    let value = this.get("owner");
+    return value!.toBytes();
+  }
+
+  set owner(value: Bytes) {
+    this.set("owner", Value.fromBytes(value));
+  }
+
+  get strategy(): string {
+    let value = this.get("strategy");
+    return value!.toString();
+  }
+
+  set strategy(value: string) {
+    this.set("strategy", Value.fromString(value));
+  }
 }
 
 export class Trade extends Entity {
