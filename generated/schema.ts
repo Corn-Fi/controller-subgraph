@@ -109,6 +109,15 @@ export class Order extends Entity {
     this.set("orderId", Value.fromBigInt(value));
   }
 
+  get trade(): string {
+    let value = this.get("trade");
+    return value!.toString();
+  }
+
+  set trade(value: string) {
+    this.set("trade", Value.fromString(value));
+  }
+
   get fromToken(): Bytes {
     let value = this.get("fromToken");
     return value!.toBytes();
@@ -231,13 +240,21 @@ export class Trade extends Entity {
     this.set("token", Value.fromString(value));
   }
 
-  get orders(): Array<string> {
+  get orders(): Array<string> | null {
     let value = this.get("orders");
-    return value!.toStringArray();
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toStringArray();
+    }
   }
 
-  set orders(value: Array<string>) {
-    this.set("orders", Value.fromStringArray(value));
+  set orders(value: Array<string> | null) {
+    if (!value) {
+      this.unset("orders");
+    } else {
+      this.set("orders", Value.fromStringArray(<Array<string>>value));
+    }
   }
 }
 
@@ -299,22 +316,21 @@ export class StrategyToken extends Entity {
     this.set("owner", Value.fromBytes(value));
   }
 
-  get trades(): Array<string> {
+  get trades(): Array<string> | null {
     let value = this.get("trades");
-    return value!.toStringArray();
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toStringArray();
+    }
   }
 
-  set trades(value: Array<string>) {
-    this.set("trades", Value.fromStringArray(value));
-  }
-
-  get erc20(): Array<string> {
-    let value = this.get("erc20");
-    return value!.toStringArray();
-  }
-
-  set erc20(value: Array<string>) {
-    this.set("erc20", Value.fromStringArray(value));
+  set trades(value: Array<string> | null) {
+    if (!value) {
+      this.unset("trades");
+    } else {
+      this.set("trades", Value.fromStringArray(<Array<string>>value));
+    }
   }
 }
 
@@ -347,6 +363,15 @@ export class Strategy extends Entity {
 
   set id(value: string) {
     this.set("id", Value.fromString(value));
+  }
+
+  get address(): Bytes {
+    let value = this.get("address");
+    return value!.toBytes();
+  }
+
+  set address(value: Bytes) {
+    this.set("address", Value.fromBytes(value));
   }
 
   get name(): string {

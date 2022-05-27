@@ -1,4 +1,5 @@
 type Controller @entity {
+  # id = Controller address
   id: ID!
   owner: Bytes!
   strategies: [Strategy!] @derivedfrom(field: "controller")
@@ -10,7 +11,7 @@ type Order @entity {
 
   orderId: BigInt!
 
-  # trade: Trade!
+  trade: Trade!
   
   fromToken: Bytes!
   toToken: Bytes!
@@ -29,7 +30,7 @@ type Trade @entity {
 
   tradeId: BigInt!
   token: StrategyToken!
-  orders: [Order!]! @derivedfrom(field: "trade")
+  orders: [Order!] @derivedfrom(field: "trade")
 }
 
 type StrategyToken @entity {
@@ -39,18 +40,22 @@ type StrategyToken @entity {
   tokenId: BigInt!
   strategy: Strategy!
   owner: Bytes!
-  trades: [Trade!]! @derivedfrom(field: "token")
-  erc20: [ERC20!]! @derivedfrom(field: "strategyToken")
+  trades: [Trade!] @derivedfrom(field: "token")
+  # erc20: [ERC20!]! @derivedfrom(field: "strategyToken")
 }
 
 type Strategy @entity {
+  # id = strategy ID
   id: ID!
+
+  address: Bytes!
   name: String!
   controller: Controller!
   tokenCount: BigInt!
 }
 
 type User @entity {
+  # id = User address
   id: ID!
 
   controller: Controller!

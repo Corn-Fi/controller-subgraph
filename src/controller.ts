@@ -18,9 +18,9 @@ const BIG_INT_ZERO = BigInt.fromI32(0)
 const CONTROLLER_VIEW = Address.fromString('0xC69334272cAE03986B4d9e5FC6C3897934E2D7Ef')
 
 export function fetchController(): Controller {
-  let controller = Controller.load(dataSource.address().toString())
+  let controller = Controller.load(dataSource.address().toHex())
   if(controller === null) {
-    controller = new Controller(dataSource.address().toString())
+    controller = new Controller(dataSource.address().toHex())
     controller.owner = ADDRESS_ZERO
     controller.save()
   }
@@ -54,12 +54,12 @@ export function fetchOrder(strategyId: BigInt, orderId: BigInt): Order {
   const controllerView = ControllerView.bind(CONTROLLER_VIEW)
   const orderData = controllerView.viewOrder(strategyId, orderId)
     
-  // let trade = fetchTrade(strategyId, orderData.tokenId, orderData.tradeId)
+  let trade = fetchTrade(strategyId, orderData.tokenId, ADDRESS_ZERO)
   let order = Order.load(id)
   if(order === null) {
     order = new Order(id)
     order.orderId = orderId
-    // order.trade = orderId.toString()
+    order.trade = trade.id
     order.fromToken = orderData.tokens[0]
     order.toToken = orderData.tokens[1]
     order.amountIn = orderData.amounts[0]
@@ -112,9 +112,9 @@ export function fetchTrade(strategyId: BigInt, tokenId: BigInt, creator: Address
 
 export function fetchUser(address: Address): User {
   const controller = fetchController()
-  let user = User.load(address.toString())
+  let user = User.load(address.toHex())
   if(user === null) {
-    user = new User(address.toString())
+    user = new User(address.toHex())
     user.controller = controller.id
     user.save()
   }
@@ -138,7 +138,6 @@ export function fetchUser(address: Address): User {
 
 export function fetchStrategyToken(strategyId: BigInt, tokenId: BigInt, creator: Address): StrategyToken {
   const id = strategyId.toString().concat("-").concat(tokenId.toString())
-  const controllerContract = ControllerContract.bind(dataSource.address())
 
   const strategy = fetchStrategy(strategyId)
   let strategyToken = StrategyToken.load(id)
@@ -153,12 +152,15 @@ export function fetchStrategyToken(strategyId: BigInt, tokenId: BigInt, creator:
 }
 
 export function fetchStrategy(strategyId: BigInt): Strategy {
+  const controllerView = ControllerView.bind(CONTROLLER_VIEW)
+  const strategyDetails = controllerView.vaultDetails(strategyId)
   let strategy = Strategy.load(strategyId.toString())
   if(strategy === null) {
     strategy = new Strategy(strategyId.toString())
-    strategy.controller = dataSource.address().toString()
+    strategy.controller = dataSource.address().toHex()
     strategy.tokenCount = BIG_INT_ONE
-    strategy.name = "Fix Me"
+    strategy.name = strategyDetails.value0
+    strategy.address = strategyDetails.value3
     strategy.save()
   }
   return strategy as Strategy
@@ -170,6 +172,7 @@ export function fetchStrategy(strategyId: BigInt): Strategy {
 
 
 export function handleCreateOrder(event: CreateOrder): void {
+  fetchUser(event.params._creator)
   fetchOrder(event.params._vaultId, event.params._orderId)
 }
 
@@ -187,7 +190,11 @@ export function handleFillOrder(event: FillOrder): void {
   order.save()
 }
 
-export function handleOwnershipTransferred(event: OwnershipTransferred): void {}
+export function handleOwnershipTransferred(event: OwnershipTransferred): void {
+  let controller = fetchController()
+  controller.owner = event.params.newOwner
+  controller.save()
+}
 
 export function handlePaused(event: Paused): void {}
 
