@@ -86,11 +86,6 @@ export function fetchERC20(address: Address, strategyId: BigInt, tokenId: BigInt
 export function fetchStrategyToken(strategyId: BigInt, tokenId: BigInt): StrategyToken {
   const controller = ControllerContract.bind(dataSource.address())
   const strat = IVaultBase.bind(controller.vaults(strategyId))
-  const call = strat.try_ownerOf(tokenId)
-  let owner = ADDRESS_ZERO
-  if(!call.reverted) {
-    owner = call.value
-  }
 
   const id = strategyId.toString().concat("-").concat(tokenId.toString())
 
@@ -98,6 +93,7 @@ export function fetchStrategyToken(strategyId: BigInt, tokenId: BigInt): Strateg
   if(strategyToken === null) {
     strategyToken = new StrategyToken(id)
 
+    const owner = strat.ownerOf(tokenId)
     let user = fetchUser(owner)
 
     const st = user.strategyTokens
