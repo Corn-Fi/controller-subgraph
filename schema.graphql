@@ -67,7 +67,7 @@ type User @entity {
   # id = User address
   id: ID!
 
-  controller: Controller!
+  # controller: Controller!
   strategyTokens: [StrategyToken!]
 }
 
@@ -91,8 +91,9 @@ type StrategyToken @entity {
   strategyId: BigInt!
   tokenId: BigInt!
   owner: Bytes!
-  trades: [Trade!]!
-  erc20: [ERC20!]!
+  trades: [Trade!]
+  erc20: [ERC20!]
+  open: Boolean!
 }
 
 type Trade @entity {
@@ -101,7 +102,7 @@ type Trade @entity {
 
   tradeId: BigInt!
   token: StrategyToken!
-  orders: [Order!]!
+  orders: [Order!]
 }
 
 type Order @entity {
@@ -124,5 +125,5 @@ type Order @entity {
 
   # owner: Bytes!
   # strategy: Strategy!
-  # strategyToken: StrategyToken!
+  strategyToken: StrategyToken!
 }
