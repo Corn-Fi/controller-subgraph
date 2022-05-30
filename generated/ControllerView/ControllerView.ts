@@ -444,6 +444,25 @@ export class ControllerView extends ethereum.SmartContract {
     return ethereum.CallResult.fromValue(value[0].toBigInt());
   }
 
+  vaults(_index: BigInt): Address {
+    let result = super.call("vaults", "vaults(uint256):(address)", [
+      ethereum.Value.fromUnsignedBigInt(_index)
+    ]);
+
+    return result[0].toAddress();
+  }
+
+  try_vaults(_index: BigInt): ethereum.CallResult<Address> {
+    let result = super.tryCall("vaults", "vaults(uint256):(address)", [
+      ethereum.Value.fromUnsignedBigInt(_index)
+    ]);
+    if (result.reverted) {
+      return new ethereum.CallResult();
+    }
+    let value = result.value;
+    return ethereum.CallResult.fromValue(value[0].toAddress());
+  }
+
   viewOpenOrdersByToken(
     _vaultId: BigInt,
     _tokenId: BigInt

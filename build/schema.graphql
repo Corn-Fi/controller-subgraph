@@ -44,7 +44,7 @@ type StrategyToken @entity {
   strategy: Strategy!
   owner: Bytes!
   trades: [Trade!] @derivedfrom(field: "token")
-  # erc20: [ERC20!]! @derivedfrom(field: "strategyToken")
+  erc20: [ERC20!] @derivedfrom(field: "strategyToken")
 }
 
 type Strategy @entity {

@@ -350,6 +350,23 @@ export class StrategyToken extends Entity {
       this.set("trades", Value.fromStringArray(<Array<string>>value));
     }
   }
+
+  get erc20(): Array<string> | null {
+    let value = this.get("erc20");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toStringArray();
+    }
+  }
+
+  set erc20(value: Array<string> | null) {
+    if (!value) {
+      this.unset("erc20");
+    } else {
+      this.set("erc20", Value.fromStringArray(<Array<string>>value));
+    }
+  }
 }
 
 export class Strategy extends Entity {

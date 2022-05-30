@@ -24,8 +24,8 @@ dataSources:
       abis:
         - name: Controller
           file: ./abis/Controller.json
-        - name: ControllerView
-          file: ./abis/ControllerView.json
+        - name: ControllerViewSubgraph
+          file: ./abis/ControllerViewSubgraph.json
       eventHandlers:
         - event: CreateOrder(indexed address,indexed uint256,uint256)
           handler: handleCreateOrder
@@ -58,6 +58,26 @@ dataSources:
       abis:
         - name: ControllerView
           file: ./abis/ControllerView.json 
+      eventHandlers:
+        - event: OwnershipTransferred(indexed address,indexed address)
+          handler: handleOwnershipTransferred   
+      file: ./src/controllerView.ts
+  - kind: ethereum
+    name: ControllerViewSubgraph
+    network: matic
+    source:
+      address: "0xEd40AB3f5ee0FaE785d94abC2328d65960a19608"
+      abi: ControllerViewSubgraph
+      startBlock: 28528975
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.5
+      language: wasm/assemblyscript
+      entities:
+        - OwnershipTransferred
+      abis:
+        - name: ControllerViewSubgraph
+          file: ./abis/ControllerViewSubgraph.json 
       eventHandlers:
         - event: OwnershipTransferred(indexed address,indexed address)
           handler: handleOwnershipTransferred   
