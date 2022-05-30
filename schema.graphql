@@ -1,73 +1,7 @@
-# type Controller @entity {
-#   # id = Controller address
-#   id: ID!
-#   owner: Bytes!
-#   strategies: [Strategy!] @derivedfrom(field: "controller")
-# }
-
-# type Order @entity {
-#   # id = strategy ID "-" order ID
-#   id: ID!
-
-#   orderId: BigInt!
-
-#   trade: Trade!
-  
-#   fromToken: Bytes!
-#   toToken: Bytes!
-#   amountIn: BigInt!
-#   desiredAmountOut: BigInt!
-#   amountOut: BigInt!
-#   expiration: BigInt!
-
-#   open: Boolean!
-#   timestamp: BigInt!
-
-#   owner: Bytes!
-#   strategy: Strategy!
-#   strategyToken: StrategyToken!
-# }
-
-# type Trade @entity {
-#   #id = strategy ID "-" token ID "-" trade ID
-#   id: ID!
-
-#   tradeId: BigInt!
-#   token: StrategyToken!
-#   orders: [Order!] @derivedfrom(field: "trade")
-# }
-
-# type StrategyToken @entity {
-#   # id = strategy ID "-" token ID
-#   id: ID!
-
-#   tokenId: BigInt!
-#   strategy: Strategy!
-#   owner: Bytes!
-#   trades: [Trade!] @derivedfrom(field: "token")
-#   erc20: [ERC20!] @derivedfrom(field: "strategyToken")
-# }
-
-# type Strategy @entity {
-#   # id = strategy ID
-#   id: ID!
-
-#   address: Bytes!
-#   name: String!
-#   controller: Controller!
-#   tokenCount: BigInt!
-# }
-
-
-
-
-
-
 type User @entity {
   # id = User address
   id: ID!
 
-  # controller: Controller!
   strategyTokens: [StrategyToken!]
 }
 
@@ -80,9 +14,6 @@ type ERC20 @entity {
   address: Bytes!
   amount: BigInt!
 }
-
-
-
 
 type StrategyToken @entity {
   # id = strategy ID "-" token ID
@@ -109,21 +40,14 @@ type Order @entity {
   # id = strategy ID "-" order ID
   id: ID!
 
-  orderId: BigInt!
-
-  # trade: Trade!
-  
+  orderId: BigInt!  
   fromToken: Bytes!
   toToken: Bytes!
   amountIn: BigInt!
   desiredAmountOut: BigInt!
   amountOut: BigInt!
   expiration: BigInt!
-
   open: Boolean!
   timestamp: BigInt!
-
-  # owner: Bytes!
-  # strategy: Strategy!
   strategyToken: StrategyToken!
 }
