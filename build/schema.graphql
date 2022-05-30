@@ -25,6 +25,7 @@ type Order @entity {
 
   owner: Bytes!
   strategy: Strategy!
+  strategyToken: StrategyToken!
 }
 
 type Trade @entity {

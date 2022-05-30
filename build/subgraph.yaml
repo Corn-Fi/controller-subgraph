@@ -23,11 +23,11 @@ dataSources:
         - Withdraw
       abis:
         - name: Controller
-          file: undefined/abis/Controller.json
+          file: undefined\abis\Controller.json
         - name: ControllerView
-          file: undefined/abis/ControllerView.json
+          file: undefined\abis\ControllerView.json
         - name: IVaultBase
-          file: undefined/abis/IVaultBase.json
+          file: undefined\abis\IVaultBase.json
       eventHandlers:
         - event: CreateOrder(indexed address,indexed uint256,uint256)
           handler: handleCreateOrder
@@ -43,7 +43,7 @@ dataSources:
           handler: handleUnpaused
         - event: Withdraw(indexed address,indexed uint256,indexed uint256)
           handler: handleWithdraw
-      file: undefined/undefined.wasm
+      file: undefined\undefined.wasm
   - kind: ethereum
     name: ControllerView
     network: matic
@@ -59,8 +59,8 @@ dataSources:
         - OwnershipTransferred
       abis:
         - name: ControllerView
-          file: ControllerView/abis/ControllerView.json
+          file: ControllerView\abis\ControllerView.json
       eventHandlers:
         - event: OwnershipTransferred(indexed address,indexed address)
           handler: handleOwnershipTransferred
-      file: ControllerView/ControllerView.wasm
+      file: ControllerView\ControllerView.wasm

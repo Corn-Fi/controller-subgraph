@@ -73,6 +73,7 @@ export function fetchOrder(strategyId: BigInt, orderId: BigInt): Order {
     order.timestamp = orderData.timestamp
     order.owner = ADDRESS_ZERO
     order.strategy = strategy.id
+    order.strategyToken = trade.token
     order.save()
   }
   return order as Order

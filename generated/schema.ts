@@ -207,6 +207,15 @@ export class Order extends Entity {
   set strategy(value: string) {
     this.set("strategy", Value.fromString(value));
   }
+
+  get strategyToken(): string {
+    let value = this.get("strategyToken");
+    return value!.toString();
+  }
+
+  set strategyToken(value: string) {
+    this.set("strategyToken", Value.fromString(value));
+  }
 }
 
 export class Trade extends Entity {
@@ -560,5 +569,98 @@ export class ERC20 extends Entity {
 
   set amount(value: BigInt) {
     this.set("amount", Value.fromBigInt(value));
+  }
+}
+
+export class StrategyTokendd extends Entity {
+  constructor(id: string) {
+    super();
+    this.set("id", Value.fromString(id));
+  }
+
+  save(): void {
+    let id = this.get("id");
+    assert(id != null, "Cannot save StrategyTokendd entity without an ID");
+    if (id) {
+      assert(
+        id.kind == ValueKind.STRING,
+        `Entities of type StrategyTokendd must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
+      );
+      store.set("StrategyTokendd", id.toString(), this);
+    }
+  }
+
+  static load(id: string): StrategyTokendd | null {
+    return changetype<StrategyTokendd | null>(store.get("StrategyTokendd", id));
+  }
+
+  get id(): string {
+    let value = this.get("id");
+    return value!.toString();
+  }
+
+  set id(value: string) {
+    this.set("id", Value.fromString(value));
+  }
+
+  get strategyId(): BigInt {
+    let value = this.get("strategyId");
+    return value!.toBigInt();
+  }
+
+  set strategyId(value: BigInt) {
+    this.set("strategyId", Value.fromBigInt(value));
+  }
+
+  get tokenId(): BigInt {
+    let value = this.get("tokenId");
+    return value!.toBigInt();
+  }
+
+  set tokenId(value: BigInt) {
+    this.set("tokenId", Value.fromBigInt(value));
+  }
+
+  get owner(): Bytes {
+    let value = this.get("owner");
+    return value!.toBytes();
+  }
+
+  set owner(value: Bytes) {
+    this.set("owner", Value.fromBytes(value));
+  }
+
+  get trades(): Array<string> | null {
+    let value = this.get("trades");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toStringArray();
+    }
+  }
+
+  set trades(value: Array<string> | null) {
+    if (!value) {
+      this.unset("trades");
+    } else {
+      this.set("trades", Value.fromStringArray(<Array<string>>value));
+    }
+  }
+
+  get erc20(): Array<string> | null {
+    let value = this.get("erc20");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toStringArray();
+    }
+  }
+
+  set erc20(value: Array<string> | null) {
+    if (!value) {
+      this.unset("erc20");
+    } else {
+      this.set("erc20", Value.fromStringArray(<Array<string>>value));
+    }
   }
 }
