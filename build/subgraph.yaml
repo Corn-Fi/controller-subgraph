@@ -23,9 +23,11 @@ dataSources:
         - Withdraw
       abis:
         - name: Controller
-          file: undefined\abis\Controller.json
-        - name: ControllerViewSubgraph
-          file: undefined\abis\ControllerViewSubgraph.json
+          file: undefined/abis/Controller.json
+        - name: ControllerView
+          file: undefined/abis/ControllerView.json
+        - name: IVaultBase
+          file: undefined/abis/IVaultBase.json
       eventHandlers:
         - event: CreateOrder(indexed address,indexed uint256,uint256)
           handler: handleCreateOrder
@@ -41,7 +43,7 @@ dataSources:
           handler: handleUnpaused
         - event: Withdraw(indexed address,indexed uint256,indexed uint256)
           handler: handleWithdraw
-      file: undefined\undefined.wasm
+      file: undefined/undefined.wasm
   - kind: ethereum
     name: ControllerView
     network: matic
@@ -57,28 +59,8 @@ dataSources:
         - OwnershipTransferred
       abis:
         - name: ControllerView
-          file: ControllerView\abis\ControllerView.json
+          file: ControllerView/abis/ControllerView.json
       eventHandlers:
         - event: OwnershipTransferred(indexed address,indexed address)
           handler: handleOwnershipTransferred
-      file: ControllerView\ControllerView.wasm
-  - kind: ethereum
-    name: ControllerViewSubgraph
-    network: matic
-    source:
-      address: "0xEd40AB3f5ee0FaE785d94abC2328d65960a19608"
-      abi: ControllerViewSubgraph
-      startBlock: 28528975
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.5
-      language: wasm/assemblyscript
-      entities:
-        - OwnershipTransferred
-      abis:
-        - name: ControllerViewSubgraph
-          file: ControllerViewSubgraph\abis\ControllerViewSubgraph.json
-      eventHandlers:
-        - event: OwnershipTransferred(indexed address,indexed address)
-          handler: handleOwnershipTransferred
-      file: ControllerView\ControllerView.wasm
+      file: ControllerView/ControllerView.wasm

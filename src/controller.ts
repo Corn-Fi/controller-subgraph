@@ -9,13 +9,14 @@ import {
   Unpaused,
   Withdraw
 } from "../generated/undefined/Controller"
-import { ControllerViewSubgraph } from "../generated/ControllerViewSubgraph/ControllerViewSubgraph"
+import { IVaultBase } from "../generated/undefined/IVaultBase"
+import { ControllerView } from "../generated/undefined/ControllerView"
 import { Controller, Order, Trade, User, ERC20, StrategyToken, Strategy } from "../generated/schema"
 
 const ADDRESS_ZERO = Address.fromString('0x0000000000000000000000000000000000000000')
 const BIG_INT_ONE = BigInt.fromI32(1)
 const BIG_INT_ZERO = BigInt.fromI32(0)
-const CONTROLLER_VIEW = Address.fromString('0xEd40AB3f5ee0FaE785d94abC2328d65960a19608')
+const CONTROLLER_VIEW = Address.fromString('0xC69334272cAE03986B4d9e5FC6C3897934E2D7Ef')
 
 export function fetchController(): Controller {
   let controller = Controller.load(dataSource.address().toHex())
@@ -51,12 +52,12 @@ export function fetchController(): Controller {
 
 export function fetchOrder(strategyId: BigInt, orderId: BigInt): Order {
   const id = strategyId.toString().concat("-").concat(orderId.toString())
-  const controllerView = ControllerViewSubgraph.bind(CONTROLLER_VIEW)
+  const controllerView = ControllerView.bind(CONTROLLER_VIEW)
   const orderData = controllerView.viewOrder(strategyId, orderId)
   const strategy = fetchStrategy(strategyId)
   
   updateERC20(strategyId, orderData.tokenId)
-  let trade = fetchTrade(strategyId, orderData.tokenId, ADDRESS_ZERO)
+  let trade = fetchTrade(strategyId, orderData.tokenId)
   let order = Order.load(id)
   if(order === null) {
     order = new Order(id)
@@ -89,12 +90,12 @@ export function fetchOrder(strategyId: BigInt, orderId: BigInt): Order {
 // }
 
 
-export function fetchTrade(strategyId: BigInt, tokenId: BigInt, creator: Address): Trade {
-  const controllerView = ControllerViewSubgraph.bind(CONTROLLER_VIEW)
+export function fetchTrade(strategyId: BigInt, tokenId: BigInt): Trade {
+  const controllerView = ControllerView.bind(CONTROLLER_VIEW)
   const tradeId = controllerView.tokenTradeLength(strategyId, tokenId).minus(BIG_INT_ONE)
 
   const id = strategyId.toString().concat("-").concat(tokenId.toString()).concat("-").concat(tradeId.toString())
-  const strategyToken = fetchStrategyToken(strategyId, tokenId, creator)
+  const strategyToken = fetchStrategyToken(strategyId, tokenId)
   let trade = Trade.load(id)
   if(trade === null) {
     trade = new Trade(id)
@@ -126,11 +127,11 @@ export function fetchUser(address: Address): User {
 }
 
 export function updateERC20(strategyId: BigInt, strategyTokenId: BigInt): void {
-  const controllerView = ControllerViewSubgraph.bind(CONTROLLER_VIEW)
+  const controllerView = ControllerView.bind(CONTROLLER_VIEW)
   const amounts = controllerView.tokenAmounts(strategyId, strategyTokenId)
   for(let i = 0; i < amounts.length; i++) {
     let id = amounts[i].token.toHexString().concat("-").concat(strategyId.toString()).concat("-").concat(strategyTokenId.toString())
-    let strategyToken = fetchStrategyToken(strategyId, strategyTokenId, ADDRESS_ZERO)
+    let strategyToken = fetchStrategyToken(strategyId, strategyTokenId)
     let erc20 = new ERC20(id)
     erc20.address = amounts[i].token
     erc20.owner = ADDRESS_ZERO
@@ -140,7 +141,10 @@ export function updateERC20(strategyId: BigInt, strategyTokenId: BigInt): void {
   }
 }
 
-export function fetchStrategyToken(strategyId: BigInt, tokenId: BigInt, creator: Address): StrategyToken {
+export function fetchStrategyToken(strategyId: BigInt, tokenId: BigInt): StrategyToken {
+  const controller = ControllerContract.bind(dataSource.address())
+  const strat = IVaultBase.bind(controller.vaults(strategyId))
+
   const id = strategyId.toString().concat("-").concat(tokenId.toString())
 
   const strategy = fetchStrategy(strategyId)
@@ -149,14 +153,14 @@ export function fetchStrategyToken(strategyId: BigInt, tokenId: BigInt, creator:
     strategyToken = new StrategyToken(id)
     strategyToken.tokenId = tokenId
     strategyToken.strategy = strategy.id
-    strategyToken.owner = creator 
+    strategyToken.owner = strat.ownerOf(tokenId) 
     strategyToken.save()
   }
   return strategyToken as StrategyToken
 }
 
 export function fetchStrategy(strategyId: BigInt): Strategy {
-  const controllerView = ControllerViewSubgraph.bind(CONTROLLER_VIEW)
+  const controllerView = ControllerView.bind(CONTROLLER_VIEW)
   const strategyDetails = controllerView.vaultDetails(strategyId)
   let strategy = Strategy.load(strategyId.toString())
   if(strategy === null) {
@@ -183,11 +187,11 @@ export function handleCreateOrder(event: CreateOrder): void {
 }
 
 export function handleCreateTrade(event: CreateTrade): void {
-  fetchTrade(event.params._vaultId, event.params._tokenId, event.params._creator)
+  fetchTrade(event.params._vaultId, event.params._tokenId)
 }
 
 export function handleFillOrder(event: FillOrder): void {
-  const controllerView = ControllerViewSubgraph.bind(CONTROLLER_VIEW)
+  const controllerView = ControllerView.bind(CONTROLLER_VIEW)
   const orderData = controllerView.viewOrder(event.params._vaultId, event.params._orderId)
   let order = fetchOrder(event.params._vaultId, event.params._orderId)
   order.timestamp = event.block.timestamp
@@ -207,18 +211,35 @@ export function handlePaused(event: Paused): void {}
 export function handleUnpaused(event: Unpaused): void {}
 
 export function handleWithdraw(event: Withdraw): void {
-  const controllerView = ControllerViewSubgraph.bind(CONTROLLER_VIEW)
-  const tradeLength = controllerView.tokenTradeLength(event.params._vaultId, event.params._tokenId)
-  for(let i = BIG_INT_ZERO; i < tradeLength; i.plus(BIG_INT_ONE)) {
-    const orders = controllerView.viewTrade(controllerView.vaults(event.params._vaultId), event.params._tokenId, i)
-    for(let j = 0; j < orders.length; j++) {
-      if(orders[j].timestamp == BIG_INT_ONE) {
-        let order = fetchOrder(event.params._vaultId, orders[j].orderId)
-        order.timestamp = event.block.timestamp
-        order.amountOut = BigInt.fromI64(0)
-        order.open = false
-        order.save()
-      }
+  const controller = ControllerContract.bind(dataSource.address())
+  const strategy = IVaultBase.bind(controller.vaults(event.params._vaultId))
+  const tradeLength = strategy._tokenTradeLength(event.params._tokenId)
+  const orders = strategy.trade(event.params._tokenId, BIG_INT_ZERO)
+  log.info('orders {}', [orders.toString()])
+  for(let j = 0; j < orders.length; j++) {
+    if(strategy.order(orders[j]).timestamp == BIG_INT_ONE) {
+      let order = fetchOrder(event.params._vaultId, orders[j])
+      order.timestamp = event.block.timestamp
+      order.amountOut = BigInt.fromI64(0)
+      order.open = false
+      order.save()
     }
   }
+
+  // for(let i = BIG_INT_ZERO; i.lt(tradeLength); i.plus(BIG_INT_ONE)) {
+  // let i = BIG_INT_ZERO
+  // while(i.lt(tradeLength)) {
+    // const orders = strategy.trade(event.params._tokenId, i)
+    // log.info('orders {}', [orders.toString()])
+    // // for(let j = 0; j < orders.length; j++) {
+    // //   if(strategy.order(orders[j]).timestamp == BIG_INT_ONE) {
+    //     let order = fetchOrder(event.params._vaultId, orders[j])
+    //     order.timestamp = event.block.timestamp
+    //     order.amountOut = BigInt.fromI64(0)
+    //     order.open = false
+    //     order.save()
+    // //   }
+    // // }
+  //   i.plus(BIG_INT_ONE)
+  // }
 }
