@@ -25,6 +25,7 @@ type StrategyToken @entity {
   trades: [Trade!]
   erc20: [ERC20!]
   open: Boolean!
+  timestamp: BigInt!
 }
 
 type Trade @entity {
@@ -34,6 +35,7 @@ type Trade @entity {
   tradeId: BigInt!
   token: StrategyToken!
   orders: [Order!]
+  timestamp: BigInt!
 }
 
 type Order @entity {

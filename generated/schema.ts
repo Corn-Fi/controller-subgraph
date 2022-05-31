@@ -228,6 +228,15 @@ export class StrategyToken extends Entity {
   set open(value: boolean) {
     this.set("open", Value.fromBoolean(value));
   }
+
+  get timestamp(): BigInt {
+    let value = this.get("timestamp");
+    return value!.toBigInt();
+  }
+
+  set timestamp(value: BigInt) {
+    this.set("timestamp", Value.fromBigInt(value));
+  }
 }
 
 export class Trade extends Entity {
@@ -294,6 +303,15 @@ export class Trade extends Entity {
     } else {
       this.set("orders", Value.fromStringArray(<Array<string>>value));
     }
+  }
+
+  get timestamp(): BigInt {
+    let value = this.get("timestamp");
+    return value!.toBigInt();
+  }
+
+  set timestamp(value: BigInt) {
+    this.set("timestamp", Value.fromBigInt(value));
   }
 }
 

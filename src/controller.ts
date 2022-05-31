@@ -109,6 +109,7 @@ export function fetchStrategyToken(strategyId: BigInt, tokenId: BigInt): Strateg
     strategyToken.tokenId = tokenId
     strategyToken.owner = owner 
     strategyToken.open = true
+    strategyToken.timestamp = BIG_INT_ZERO
     strategyToken.save()
   }
   return strategyToken as StrategyToken
@@ -135,6 +136,7 @@ export function fetchTrade(strategyId: BigInt, tokenId: BigInt, tradeId: BigInt)
 
     trade.tradeId = tradeId
     trade.token = strategyToken.id
+    trade.timestamp = BIG_INT_ZERO
     trade.save()
   }
   return trade as Trade
@@ -142,18 +144,25 @@ export function fetchTrade(strategyId: BigInt, tokenId: BigInt, tradeId: BigInt)
 
 // ---------------------------------------------------------------------------------
 
-export function fetchOrder(strategyId: BigInt, orderId: BigInt): Order {
+export function fetchOrder(strategyId: BigInt, orderId: BigInt, timestamp: BigInt): Order {
   const id = strategyId.toString().concat("-").concat(orderId.toString())
   const controllerView = ControllerView.bind(CONTROLLER_VIEW)
   const orderData = controllerView.viewOrder(strategyId, orderId)
   
   updateERC20(strategyId, orderData.tokenId)
+
+  let trade = fetchTrade(strategyId, orderData.tokenId, orderData.tradeId)
+  trade.timestamp = timestamp
+
+  let strategyToken = fetchStrategyToken(strategyId, orderData.tokenId)
+  strategyToken.timestamp = timestamp
+  strategyToken.save()
   
   let order = Order.load(id)
   if(order === null) {
     order = new Order(id)
 
-    let trade = fetchTrade(strategyId, orderData.tokenId, orderData.tradeId)
+    trade = fetchTrade(strategyId, orderData.tokenId, orderData.tradeId)
 
     const tr = trade.orders
     if(tr === null) {
@@ -162,9 +171,7 @@ export function fetchOrder(strategyId: BigInt, orderId: BigInt): Order {
     else {
       trade.orders = tr.concat([order.id])
     }
-    trade.save()
 
-    const strategyToken = fetchStrategyToken(strategyId, orderData.tokenId)
     order.orderId = orderId
     order.fromToken = orderData.tokens[0]
     order.toToken = orderData.tokens[1]
@@ -177,6 +184,7 @@ export function fetchOrder(strategyId: BigInt, orderId: BigInt): Order {
     order.strategyToken = strategyToken.id
     order.save()
   }
+  trade.save()
   return order as Order
 }
 
@@ -199,7 +207,7 @@ export function updateERC20(strategyId: BigInt, tokenId: BigInt): void {
 // ---------------------------------------------------------------------------------
 
 export function handleCreateOrder(event: CreateOrder): void {
-  fetchOrder(event.params._vaultId, event.params._orderId)
+  fetchOrder(event.params._vaultId, event.params._orderId, event.block.timestamp)
 }
 
 export function handleCreateTrade(event: CreateTrade): void {}
@@ -207,7 +215,7 @@ export function handleCreateTrade(event: CreateTrade): void {}
 export function handleFillOrder(event: FillOrder): void {
   const controllerView = ControllerView.bind(CONTROLLER_VIEW)
   const orderData = controllerView.viewOrder(event.params._vaultId, event.params._orderId)
-  let order = fetchOrder(event.params._vaultId, event.params._orderId)
+  let order = fetchOrder(event.params._vaultId, event.params._orderId, event.block.timestamp)
   order.timestamp = event.block.timestamp
   order.amountOut = orderData.amounts[1]
   order.open = false
@@ -235,7 +243,7 @@ export function handleWithdraw(event: Withdraw): void {
       const orders = strategy.trade(event.params._tokenId, BigInt.fromI64(i))
       for(let j = 0; j < orders.length; j++) {
         if(strategy.order(orders[j]).timestamp == BIG_INT_ONE) {
-          let order = fetchOrder(event.params._vaultId, orders[j])
+          let order = fetchOrder(event.params._vaultId, orders[j], event.block.timestamp)
           order.timestamp = event.block.timestamp
           order.amountOut = BigInt.fromI64(0)
           order.open = false
