@@ -109,13 +109,13 @@ export class ERC20 extends Entity {
     this.set("owner", Value.fromBytes(value));
   }
 
-  get address(): Bytes {
-    let value = this.get("address");
-    return value!.toBytes();
+  get erc20Meta(): string {
+    let value = this.get("erc20Meta");
+    return value!.toString();
   }
 
-  set address(value: Bytes) {
-    this.set("address", Value.fromBytes(value));
+  set erc20Meta(value: string) {
+    this.set("erc20Meta", Value.fromString(value));
   }
 
   get amount(): BigInt {
@@ -416,5 +416,194 @@ export class Order extends Entity {
 
   set strategyToken(value: string) {
     this.set("strategyToken", Value.fromString(value));
+  }
+}
+
+export class ERC20Meta extends Entity {
+  constructor(id: string) {
+    super();
+    this.set("id", Value.fromString(id));
+  }
+
+  save(): void {
+    let id = this.get("id");
+    assert(id != null, "Cannot save ERC20Meta entity without an ID");
+    if (id) {
+      assert(
+        id.kind == ValueKind.STRING,
+        `Entities of type ERC20Meta must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
+      );
+      store.set("ERC20Meta", id.toString(), this);
+    }
+  }
+
+  static load(id: string): ERC20Meta | null {
+    return changetype<ERC20Meta | null>(store.get("ERC20Meta", id));
+  }
+
+  get id(): string {
+    let value = this.get("id");
+    return value!.toString();
+  }
+
+  set id(value: string) {
+    this.set("id", Value.fromString(value));
+  }
+
+  get priceUSD(): BigDecimal {
+    let value = this.get("priceUSD");
+    return value!.toBigDecimal();
+  }
+
+  set priceUSD(value: BigDecimal) {
+    this.set("priceUSD", Value.fromBigDecimal(value));
+  }
+
+  get decimals(): BigInt {
+    let value = this.get("decimals");
+    return value!.toBigInt();
+  }
+
+  set decimals(value: BigInt) {
+    this.set("decimals", Value.fromBigInt(value));
+  }
+
+  get name(): string {
+    let value = this.get("name");
+    return value!.toString();
+  }
+
+  set name(value: string) {
+    this.set("name", Value.fromString(value));
+  }
+
+  get symbol(): string {
+    let value = this.get("symbol");
+    return value!.toString();
+  }
+
+  set symbol(value: string) {
+    this.set("symbol", Value.fromString(value));
+  }
+
+  get totalBalance(): BigDecimal {
+    let value = this.get("totalBalance");
+    return value!.toBigDecimal();
+  }
+
+  set totalBalance(value: BigDecimal) {
+    this.set("totalBalance", Value.fromBigDecimal(value));
+  }
+
+  get totalValueUSD(): BigDecimal {
+    let value = this.get("totalValueUSD");
+    return value!.toBigDecimal();
+  }
+
+  set totalValueUSD(value: BigDecimal) {
+    this.set("totalValueUSD", Value.fromBigDecimal(value));
+  }
+}
+
+export class Controller extends Entity {
+  constructor(id: string) {
+    super();
+    this.set("id", Value.fromString(id));
+  }
+
+  save(): void {
+    let id = this.get("id");
+    assert(id != null, "Cannot save Controller entity without an ID");
+    if (id) {
+      assert(
+        id.kind == ValueKind.STRING,
+        `Entities of type Controller must have an ID of type String but the id '${id.displayData()}' is of type ${id.displayKind()}`
+      );
+      store.set("Controller", id.toString(), this);
+    }
+  }
+
+  static load(id: string): Controller | null {
+    return changetype<Controller | null>(store.get("Controller", id));
+  }
+
+  get id(): string {
+    let value = this.get("id");
+    return value!.toString();
+  }
+
+  set id(value: string) {
+    this.set("id", Value.fromString(value));
+  }
+
+  get strategyCount(): BigInt {
+    let value = this.get("strategyCount");
+    return value!.toBigInt();
+  }
+
+  set strategyCount(value: BigInt) {
+    this.set("strategyCount", Value.fromBigInt(value));
+  }
+
+  get userCount(): BigInt {
+    let value = this.get("userCount");
+    return value!.toBigInt();
+  }
+
+  set userCount(value: BigInt) {
+    this.set("userCount", Value.fromBigInt(value));
+  }
+
+  get erc20(): Array<string> | null {
+    let value = this.get("erc20");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toStringArray();
+    }
+  }
+
+  set erc20(value: Array<string> | null) {
+    if (!value) {
+      this.unset("erc20");
+    } else {
+      this.set("erc20", Value.fromStringArray(<Array<string>>value));
+    }
+  }
+
+  get totalOrderCount(): BigInt {
+    let value = this.get("totalOrderCount");
+    return value!.toBigInt();
+  }
+
+  set totalOrderCount(value: BigInt) {
+    this.set("totalOrderCount", Value.fromBigInt(value));
+  }
+
+  get openOrderCount(): BigInt {
+    let value = this.get("openOrderCount");
+    return value!.toBigInt();
+  }
+
+  set openOrderCount(value: BigInt) {
+    this.set("openOrderCount", Value.fromBigInt(value));
+  }
+
+  get filledOrderCount(): BigInt {
+    let value = this.get("filledOrderCount");
+    return value!.toBigInt();
+  }
+
+  set filledOrderCount(value: BigInt) {
+    this.set("filledOrderCount", Value.fromBigInt(value));
+  }
+
+  get totalValueUSD(): BigDecimal {
+    let value = this.get("totalValueUSD");
+    return value!.toBigDecimal();
+  }
+
+  set totalValueUSD(value: BigDecimal) {
+    this.set("totalValueUSD", Value.fromBigDecimal(value));
   }
 }
