@@ -23,13 +23,13 @@ dataSources:
         - Withdraw
       abis:
         - name: Controller
-          file: undefined\abis\Controller.json
+          file: undefined/abis/Controller.json
         - name: ControllerView
-          file: undefined\abis\ControllerView.json
+          file: undefined/abis/ControllerView.json
         - name: IVaultBase
-          file: undefined\abis\IVaultBase.json
+          file: undefined/abis/IVaultBase.json
         - name: ERC20
-          file: undefined\abis\erc20.json
+          file: undefined/abis/erc20.json
       eventHandlers:
         - event: CreateOrder(indexed address,indexed uint256,uint256)
           handler: handleCreateOrder
@@ -45,7 +45,7 @@ dataSources:
           handler: handleUnpaused
         - event: Withdraw(indexed address,indexed uint256,indexed uint256)
           handler: handleWithdraw
-      file: undefined\undefined.wasm
+      file: undefined/undefined.wasm
   - kind: ethereum
     name: ChainlinkOracle
     network: matic
@@ -61,12 +61,12 @@ dataSources:
         - NewRound
       abis:
         - name: ChainlinkOracle
-          file: ChainlinkOracle\abis\ChainlinkOracle.json
+          file: ChainlinkOracle/abis/ChainlinkOracle.json
         - name: Oracle
-          file: ChainlinkOracle\abis\Oracle.json
+          file: ChainlinkOracle/abis/Oracle.json
         - name: ERC20
-          file: ChainlinkOracle\abis\erc20.json
+          file: ChainlinkOracle/abis/erc20.json
       eventHandlers:
         - event: NewRound(indexed uint256,indexed address,uint256)
           handler: handleNewRound
-      file: ChainlinkOracle\ChainlinkOracle.wasm
+      file: ChainlinkOracle/ChainlinkOracle.wasm

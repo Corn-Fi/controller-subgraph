@@ -249,12 +249,12 @@ export function updateERC20(strategyId: BigInt, tokenId: BigInt): void {
 
     let erc20Meta = fetchERC20Meta(amounts[i].token)
     const denominator = BigInt.fromI32(10).pow(u8(erc20Meta.decimals.toI32())).toBigDecimal()
-    const difference = amounts[i].amount.toBigDecimal().minus(erc20.amount).div(denominator)
-    erc20Meta.totalBalance = erc20Meta.totalBalance.plus(difference)
+    const newAmount = amounts[i].amount.toBigDecimal().div(denominator)
+    erc20Meta.totalBalance = erc20Meta.totalBalance.minus(erc20.amount).plus(newAmount)
     erc20Meta.totalValueUSD = erc20Meta.totalBalance.times(erc20Meta.priceUSD)
     erc20Meta.save()
 
-    erc20.amount = amounts[i].amount.toBigDecimal().div(denominator)
+    erc20.amount = newAmount
     erc20.save()
   }
 }
