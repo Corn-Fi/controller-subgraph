@@ -1,4 +1,4 @@
-import { Address, BigInt, dataSource, log } from "@graphprotocol/graph-ts"
+import { Address, BigDecimal, BigInt, log } from "@graphprotocol/graph-ts"
 import {
   Controller as ControllerContract,
   CreateOrder,
@@ -11,37 +11,41 @@ import {
 } from "../generated/undefined/Controller"
 import { IVaultBase } from "../generated/undefined/IVaultBase"
 import { ControllerView } from "../generated/undefined/ControllerView"
-import { Order, Trade, User, ERC20, StrategyToken } from "../generated/schema"
+import { ERC20 as ERC20Contract } from "../generated/undefined/ERC20"
+import { Order, Trade, User, ERC20, ERC20Meta, StrategyToken, Controller } from "../generated/schema"
 
 const ADDRESS_ZERO = Address.fromString('0x0000000000000000000000000000000000000000')
 const BIG_INT_ONE = BigInt.fromI32(1)
 const BIG_INT_ZERO = BigInt.fromI32(0)
 const CONTROLLER_VIEW = Address.fromString('0xC69334272cAE03986B4d9e5FC6C3897934E2D7Ef')
-
-
-
-
-
-
-// export function fetchStrategy(strategyId: BigInt): Strategy {
-//   const controllerView = ControllerView.bind(CONTROLLER_VIEW)
-//   const strategyDetails = controllerView.vaultDetails(strategyId)
-//   let strategy = Strategy.load(strategyId.toString())
-//   if(strategy === null) {
-//     strategy = new Strategy(strategyId.toString())
-//     strategy.controller = dataSource.address().toHex()
-//     strategy.tokenCount = BIG_INT_ONE
-//     strategy.name = strategyDetails.value0
-//     strategy.address = strategyDetails.value3
-//     strategy.save()
-//   }
-//   return strategy as Strategy
-// }
-
+const CONTROLLER = Address.fromString('0x678753f5b53bfbF1d4dCfBB0F33aB5C2161edDF2')
 
 
 // ---------------------------------------------------------------------------------
 // //////////////////////////////// Fetch Entities /////////////////////////////////
+// ---------------------------------------------------------------------------------
+
+export function fetchERC20Contract(address: Address): ERC20Contract {
+  return ERC20Contract.bind(address)
+}
+
+// ---------------------------------------------------------------------------------
+
+export function fetchController(): Controller {
+  let controller = Controller.load(CONTROLLER.toHexString())
+  if(controller === null) {
+    controller = new Controller(CONTROLLER.toHexString())
+    controller.strategyCount = BIG_INT_ZERO
+    controller.userCount = BIG_INT_ZERO
+    controller.totalOrderCount = BIG_INT_ZERO
+    controller.openOrderCount = BIG_INT_ZERO
+    controller.filledOrderCount = BIG_INT_ZERO
+    controller.totalValueUSD = BigDecimal.zero()
+    controller.save()
+  }
+  return controller as Controller
+}
+
 // ---------------------------------------------------------------------------------
 
 export function fetchUser(address: Address): User {
@@ -49,6 +53,10 @@ export function fetchUser(address: Address): User {
   if(user === null) {
     user = new User(address.toHex())
     user.save()
+
+    let controller = fetchController()
+    controller.userCount = controller.userCount.plus(BIG_INT_ONE)
+    controller.save()
   }
   return user as User
 }
@@ -74,8 +82,8 @@ export function fetchERC20(address: Address, strategyId: BigInt, tokenId: BigInt
 
     erc20.strategyToken = strategyToken.id
     erc20.owner = strategyToken.owner
-    erc20.address = address
-    erc20.amount = BIG_INT_ZERO
+    erc20.erc20Meta = fetchERC20Meta(address).id
+    erc20.amount = BigDecimal.zero()
     erc20.save()
   }
   return erc20 as ERC20
@@ -83,14 +91,49 @@ export function fetchERC20(address: Address, strategyId: BigInt, tokenId: BigInt
 
 // ---------------------------------------------------------------------------------
 
+export function fetchERC20Meta(address: Address): ERC20Meta {
+  const id = address.toHexString()
+  let erc20 = ERC20Meta.load(id)
+  if(erc20 === null) {
+    const erc20Contract = fetchERC20Contract(address)
+    erc20 = new ERC20Meta(id)
+    erc20.priceUSD = BigDecimal.zero()
+    erc20.decimals = BigInt.fromI32((erc20Contract.decimals()))
+    erc20.name = erc20Contract.name()
+    erc20.symbol = erc20Contract.symbol()
+    erc20.totalBalance = BigDecimal.zero()
+    erc20.totalValueUSD = BigDecimal.zero()
+    erc20.save()
+
+    let controller = fetchController()
+    const erc20s = controller.erc20
+    if(erc20s === null) {
+      controller.erc20 = [erc20.id]
+    }
+    else {
+      controller.erc20 = erc20s.concat([erc20.id])
+    }
+    controller.save()
+  }
+  return erc20 as ERC20Meta
+}
+
+// ---------------------------------------------------------------------------------
+
 export function fetchStrategyToken(strategyId: BigInt, tokenId: BigInt): StrategyToken {
-  const controller = ControllerContract.bind(dataSource.address())
+  const controller = ControllerContract.bind(CONTROLLER)
   const strat = IVaultBase.bind(controller.vaults(strategyId))
 
   const id = strategyId.toString().concat("-").concat(tokenId.toString())
 
   let strategyToken = StrategyToken.load(id)
   if(strategyToken === null) {
+    if(tokenId.equals(BIG_INT_ONE)) {
+      let contr = fetchController()
+      contr.strategyCount = contr.strategyCount.plus(BIG_INT_ONE)
+      contr.save()
+    }
+
     strategyToken = new StrategyToken(id)
 
     const owner = strat.ownerOf(tokenId)
@@ -162,8 +205,11 @@ export function fetchOrder(strategyId: BigInt, orderId: BigInt, timestamp: BigIn
   if(order === null) {
     order = new Order(id)
 
-    trade = fetchTrade(strategyId, orderData.tokenId, orderData.tradeId)
-
+    let controller = fetchController()
+    controller.totalOrderCount = controller.totalOrderCount.plus(BIG_INT_ONE)
+    controller.openOrderCount = controller.openOrderCount.plus(BIG_INT_ONE)
+    controller.save()
+    
     const tr = trade.orders
     if(tr === null) {
       trade.orders = [order.id]
@@ -172,12 +218,15 @@ export function fetchOrder(strategyId: BigInt, orderId: BigInt, timestamp: BigIn
       trade.orders = tr.concat([order.id])
     }
 
+    const fromPricePrecision = BigInt.fromI32(10).pow(u8(fetchERC20Meta(orderData.tokens[0]).decimals.toI32())).toBigDecimal()
+    const toPricePrecision = BigInt.fromI32(10).pow(u8(fetchERC20Meta(orderData.tokens[1]).decimals.toI32())).toBigDecimal()
+
     order.orderId = orderId
     order.fromToken = orderData.tokens[0]
     order.toToken = orderData.tokens[1]
-    order.amountIn = orderData.amounts[0]
-    order.desiredAmountOut = orderData.amounts[1]
-    order.amountOut = orderData.amounts[2]
+    order.amountIn = orderData.amounts[0].toBigDecimal().div(fromPricePrecision)
+    order.desiredAmountOut = orderData.amounts[1].toBigDecimal().div(toPricePrecision)
+    order.amountOut = orderData.amounts[2].toBigDecimal()
     order.expiration = orderData.times[0]
     order.open = true
     order.timestamp = orderData.timestamp
@@ -197,7 +246,15 @@ export function updateERC20(strategyId: BigInt, tokenId: BigInt): void {
   const amounts = controllerView.tokenAmounts(strategyId, tokenId)
   for(let i = 0; i < amounts.length; i++) {
     let erc20 = fetchERC20(amounts[i].token, strategyId, tokenId)
-    erc20.amount = amounts[i].amount
+
+    let erc20Meta = fetchERC20Meta(amounts[i].token)
+    const denominator = BigInt.fromI32(10).pow(u8(erc20Meta.decimals.toI32())).toBigDecimal()
+    const difference = amounts[i].amount.toBigDecimal().minus(erc20.amount).div(denominator)
+    erc20Meta.totalBalance = erc20Meta.totalBalance.plus(difference)
+    erc20Meta.totalValueUSD = erc20Meta.totalBalance.times(erc20Meta.priceUSD)
+    erc20Meta.save()
+
+    erc20.amount = amounts[i].amount.toBigDecimal().div(denominator)
     erc20.save()
   }
 }
@@ -216,10 +273,16 @@ export function handleFillOrder(event: FillOrder): void {
   const controllerView = ControllerView.bind(CONTROLLER_VIEW)
   const orderData = controllerView.viewOrder(event.params._vaultId, event.params._orderId)
   let order = fetchOrder(event.params._vaultId, event.params._orderId, event.block.timestamp)
+  const pricePrecision = BigInt.fromI32(10).pow(u8(fetchERC20Meta(orderData.tokens[1]).decimals.toI32())).toBigDecimal()
   order.timestamp = event.block.timestamp
-  order.amountOut = orderData.amounts[1]
+  order.amountOut = orderData.amounts[1].toBigDecimal().div(pricePrecision)
   order.open = false
   order.save()
+
+  let controller = fetchController()
+  controller.openOrderCount = controller.openOrderCount.minus(BIG_INT_ONE)
+  controller.filledOrderCount = controller.filledOrderCount.plus(BIG_INT_ONE)
+  controller.save()
 }
 
 export function handleOwnershipTransferred(event: OwnershipTransferred): void {}
@@ -233,7 +296,7 @@ export function handleWithdraw(event: Withdraw): void {
   strategyToken.open = false
   strategyToken.save()
 
-  const controller = ControllerContract.bind(dataSource.address())
+  const controller = ControllerContract.bind(CONTROLLER)
   const strategy = IVaultBase.bind(controller.vaults(event.params._vaultId))
   
   const st = strategyToken.trades
@@ -245,9 +308,13 @@ export function handleWithdraw(event: Withdraw): void {
         if(strategy.order(orders[j]).timestamp == BIG_INT_ONE) {
           let order = fetchOrder(event.params._vaultId, orders[j], event.block.timestamp)
           order.timestamp = event.block.timestamp
-          order.amountOut = BigInt.fromI64(0)
+          order.amountOut = BigInt.fromI64(0).toBigDecimal()
           order.open = false
           order.save()
+
+          let controller = fetchController()
+          controller.openOrderCount = controller.openOrderCount.minus(BIG_INT_ONE)
+          controller.save()
         }
       }
     }

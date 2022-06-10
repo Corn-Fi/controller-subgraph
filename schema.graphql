@@ -11,8 +11,8 @@ type ERC20 @entity {
 
   strategyToken: StrategyToken!
   owner: Bytes!
-  address: Bytes!
-  amount: BigInt!
+  erc20Meta: ERC20Meta!
+  amount: BigDecimal!
 }
 
 type StrategyToken @entity {
@@ -45,11 +45,37 @@ type Order @entity {
   orderId: BigInt!  
   fromToken: Bytes!
   toToken: Bytes!
-  amountIn: BigInt!
-  desiredAmountOut: BigInt!
-  amountOut: BigInt!
+  amountIn: BigDecimal!
+  desiredAmountOut: BigDecimal!
+  amountOut: BigDecimal!
   expiration: BigInt!
   open: Boolean!
   timestamp: BigInt!
   strategyToken: StrategyToken!
+}
+
+
+
+type ERC20Meta @entity {
+  # token address
+  id: ID!
+
+  priceUSD: BigDecimal!
+  decimals: BigInt!
+  name: String!
+  symbol: String!
+  totalBalance: BigDecimal!
+  totalValueUSD: BigDecimal!
+}
+
+type Controller @entity {
+  id: ID!
+
+  strategyCount: BigInt!
+  userCount: BigInt!
+  erc20: [ERC20Meta!]
+  totalOrderCount: BigInt!
+  openOrderCount: BigInt!
+  filledOrderCount: BigInt!
+  totalValueUSD: BigDecimal!
 }

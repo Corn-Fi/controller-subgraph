@@ -8,6 +8,7 @@ dataSources:
     source:
       address: "0x678753f5b53bfbF1d4dCfBB0F33aB5C2161edDF2"
       abi: Controller
+      # startBlock: 28980123
       startBlock: 28528975
     mapping:
       kind: ethereum/events
@@ -28,6 +29,8 @@ dataSources:
           file: ./abis/ControllerView.json
         - name: IVaultBase
           file: ./abis/IVaultBase.json
+        - name: ERC20
+          file: ./abis/erc20.json
       eventHandlers:
         - event: CreateOrder(indexed address,indexed uint256,uint256)
           handler: handleCreateOrder
@@ -45,22 +48,26 @@ dataSources:
           handler: handleWithdraw
       file: ./src/controller.ts
   - kind: ethereum
-    name: ControllerView
+    name: ChainlinkOracle
     network: matic
     source:
-      address: "0xC69334272cAE03986B4d9e5FC6C3897934E2D7Ef"
-      abi: ControllerView
-      startBlock: 28528975
+      address: "0xf9c53A834F60cBbE40E27702276fBc0819B3aFAD"
+      abi: ChainlinkOracle
+      startBlock: 29345265
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.5
       language: wasm/assemblyscript
       entities:
-        - OwnershipTransferred
+        - NewRound
       abis:
-        - name: ControllerView
-          file: ./abis/ControllerView.json 
+        - name: ChainlinkOracle
+          file: ./abis/ChainlinkOracle.json
+        - name: Oracle
+          file: ./abis/Oracle.json
+        - name: ERC20
+          file: ./abis/erc20.json
       eventHandlers:
-        - event: OwnershipTransferred(indexed address,indexed address)
-          handler: handleOwnershipTransferred   
-      file: ./src/controllerView.ts
+        - event: NewRound(indexed uint256,indexed address,uint256)
+          handler: handleNewRound
+      file: ./src/chainlink-oracle.ts
