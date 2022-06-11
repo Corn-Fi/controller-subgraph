@@ -41,6 +41,8 @@ export function fetchController(): Controller {
     controller.openOrderCount = BIG_INT_ZERO
     controller.filledOrderCount = BIG_INT_ZERO
     controller.totalValueUSD = BigDecimal.zero()
+    controller.totalVolumeDepositedUSD = BigDecimal.zero()
+    controller.totalVolumeFilledUSD = BigDecimal.zero()
     controller.save()
   }
   return controller as Controller
@@ -80,6 +82,7 @@ export function fetchERC20(address: Address, strategyId: BigInt, tokenId: BigInt
     }
     strategyToken.save()
 
+    erc20.address = address
     erc20.strategyToken = strategyToken.id
     erc20.owner = strategyToken.owner
     erc20.erc20Meta = fetchERC20Meta(address).id
@@ -204,11 +207,6 @@ export function fetchOrder(strategyId: BigInt, orderId: BigInt, timestamp: BigIn
   let order = Order.load(id)
   if(order === null) {
     order = new Order(id)
-
-    let controller = fetchController()
-    controller.totalOrderCount = controller.totalOrderCount.plus(BIG_INT_ONE)
-    controller.openOrderCount = controller.openOrderCount.plus(BIG_INT_ONE)
-    controller.save()
     
     const tr = trade.orders
     if(tr === null) {
@@ -232,6 +230,17 @@ export function fetchOrder(strategyId: BigInt, orderId: BigInt, timestamp: BigIn
     order.timestamp = orderData.timestamp
     order.strategyToken = strategyToken.id
     order.save()
+
+    let token0 = fetchERC20Meta(orderData.tokens[0])
+    token0.totalBalance = token0.totalBalance.plus(order.amountIn)
+    token0.totalValueUSD = token0.totalBalance.times(token0.priceUSD)
+    token0.save()
+
+    let controller = fetchController()
+    controller.totalOrderCount = controller.totalOrderCount.plus(BIG_INT_ONE)
+    controller.openOrderCount = controller.openOrderCount.plus(BIG_INT_ONE)
+    controller.totalVolumeDepositedUSD = controller.totalVolumeDepositedUSD.plus(token0.totalValueUSD)
+    controller.save()
   }
   trade.save()
   return order as Order
@@ -250,7 +259,7 @@ export function updateERC20(strategyId: BigInt, tokenId: BigInt): void {
     let erc20Meta = fetchERC20Meta(amounts[i].token)
     const denominator = BigInt.fromI32(10).pow(u8(erc20Meta.decimals.toI32())).toBigDecimal()
     const newAmount = amounts[i].amount.toBigDecimal().div(denominator)
-    erc20Meta.totalBalance = erc20Meta.totalBalance.minus(erc20.amount).plus(newAmount)
+    // erc20Meta.totalBalance = erc20Meta.totalBalance.minus(erc20.amount).plus(newAmount)
     erc20Meta.totalValueUSD = erc20Meta.totalBalance.times(erc20Meta.priceUSD)
     erc20Meta.save()
 
@@ -279,9 +288,19 @@ export function handleFillOrder(event: FillOrder): void {
   order.open = false
   order.save()
 
+  let token0 = fetchERC20Meta(orderData.tokens[0])
+  let token1 = fetchERC20Meta(orderData.tokens[1])
+  token0.totalBalance = token0.totalBalance.minus(order.amountIn)
+  token0.totalValueUSD = token0.totalBalance.times(token0.priceUSD)
+  token1.totalBalance = token1.totalBalance.plus(order.amountOut)
+  token1.totalValueUSD = token1.totalBalance.times(token1.priceUSD)
+  token0.save()
+  token1.save()
+
   let controller = fetchController()
   controller.openOrderCount = controller.openOrderCount.minus(BIG_INT_ONE)
   controller.filledOrderCount = controller.filledOrderCount.plus(BIG_INT_ONE)
+  controller.totalVolumeFilledUSD = controller.totalVolumeFilledUSD.plus(token1.totalValueUSD)
   controller.save()
 }
 
@@ -295,6 +314,21 @@ export function handleWithdraw(event: Withdraw): void {
   const strategyToken = fetchStrategyToken(event.params._vaultId, event.params._tokenId)
   strategyToken.open = false
   strategyToken.save()
+
+  const controllerView = ControllerView.bind(CONTROLLER_VIEW)
+  const orderTokens = controllerView.tokenAmounts(event.params._vaultId, event.params._tokenId)
+  const tokens = strategyToken.erc20
+  if(tokens !== null) {
+    let token0 = fetchERC20Meta(orderTokens[0].token)
+    let token1 = fetchERC20Meta(orderTokens[1].token)
+    token0.totalBalance = token0.totalBalance.minus(fetchERC20(Address.fromString(token0.id), event.params._vaultId, event.params._tokenId).amount)
+    token0.totalValueUSD = token0.totalBalance.times(token0.priceUSD)
+    token1.totalBalance = token1.totalBalance.minus(fetchERC20(Address.fromString(token1.id), event.params._vaultId, event.params._tokenId).amount)
+    token1.totalValueUSD = token1.totalBalance.times(token1.priceUSD)
+    token0.save()
+    token1.save()
+  }
+  
 
   const controller = ControllerContract.bind(CONTROLLER)
   const strategy = IVaultBase.bind(controller.vaults(event.params._vaultId))

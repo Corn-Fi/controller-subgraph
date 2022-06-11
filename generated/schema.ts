@@ -91,6 +91,15 @@ export class ERC20 extends Entity {
     this.set("id", Value.fromString(value));
   }
 
+  get address(): Bytes {
+    let value = this.get("address");
+    return value!.toBytes();
+  }
+
+  set address(value: Bytes) {
+    this.set("address", Value.fromBytes(value));
+  }
+
   get strategyToken(): string {
     let value = this.get("strategyToken");
     return value!.toString();
@@ -623,5 +632,23 @@ export class Controller extends Entity {
 
   set totalValueUSD(value: BigDecimal) {
     this.set("totalValueUSD", Value.fromBigDecimal(value));
+  }
+
+  get totalVolumeDepositedUSD(): BigDecimal {
+    let value = this.get("totalVolumeDepositedUSD");
+    return value!.toBigDecimal();
+  }
+
+  set totalVolumeDepositedUSD(value: BigDecimal) {
+    this.set("totalVolumeDepositedUSD", Value.fromBigDecimal(value));
+  }
+
+  get totalVolumeFilledUSD(): BigDecimal {
+    let value = this.get("totalVolumeFilledUSD");
+    return value!.toBigDecimal();
+  }
+
+  set totalVolumeFilledUSD(value: BigDecimal) {
+    this.set("totalVolumeFilledUSD", Value.fromBigDecimal(value));
   }
 }

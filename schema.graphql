@@ -79,4 +79,6 @@ type Controller @entity {
   openOrderCount: BigInt!
   filledOrderCount: BigInt!
   totalValueUSD: BigDecimal!
+  totalVolumeDepositedUSD: BigDecimal!
+  totalVolumeFilledUSD: BigDecimal!
 }

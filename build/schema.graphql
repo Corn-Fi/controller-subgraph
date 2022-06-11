@@ -9,6 +9,7 @@ type ERC20 @entity {
   # id = ERC20 address "-" strategy ID "-" token ID
   id: ID!
 
+  address: Bytes!
   strategyToken: StrategyToken!
   owner: Bytes!
   erc20Meta: ERC20Meta!
