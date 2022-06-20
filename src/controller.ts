@@ -1,4 +1,4 @@
-import { Address, BigDecimal, BigInt, log } from "@graphprotocol/graph-ts"
+import { Address, BigDecimal, BigInt, ByteArray, Bytes, log } from "@graphprotocol/graph-ts"
 import {
   Controller as ControllerContract,
   CreateOrder,
@@ -156,6 +156,7 @@ export function fetchStrategyToken(strategyId: BigInt, tokenId: BigInt): Strateg
     strategyToken.owner = owner 
     strategyToken.open = true
     strategyToken.timestamp = BIG_INT_ZERO
+    strategyToken.txHash = Bytes.empty()
     strategyToken.save()
   }
   return strategyToken as StrategyToken
@@ -229,6 +230,8 @@ export function fetchOrder(strategyId: BigInt, orderId: BigInt, timestamp: BigIn
     order.open = true
     order.timestamp = orderData.timestamp
     order.strategyToken = strategyToken.id
+    order.txHash = Bytes.empty()
+    order.creationTime = BIG_INT_ZERO
     order.save()
 
     let token0 = fetchERC20Meta(orderData.tokens[0])
@@ -239,7 +242,8 @@ export function fetchOrder(strategyId: BigInt, orderId: BigInt, timestamp: BigIn
     let controller = fetchController()
     controller.totalOrderCount = controller.totalOrderCount.plus(BIG_INT_ONE)
     controller.openOrderCount = controller.openOrderCount.plus(BIG_INT_ONE)
-    controller.totalVolumeDepositedUSD = controller.totalVolumeDepositedUSD.plus(token0.totalValueUSD)
+    const depositValue = order.amountIn.times(token0.priceUSD)
+    controller.totalVolumeDepositedUSD = controller.totalVolumeDepositedUSD.plus(depositValue)
     controller.save()
   }
   trade.save()
@@ -273,10 +277,18 @@ export function updateERC20(strategyId: BigInt, tokenId: BigInt): void {
 // ---------------------------------------------------------------------------------
 
 export function handleCreateOrder(event: CreateOrder): void {
-  fetchOrder(event.params._vaultId, event.params._orderId, event.block.timestamp)
+  let order = fetchOrder(event.params._vaultId, event.params._orderId, event.block.timestamp)
+  order.creationTime = event.block.timestamp
+  order.save()
 }
 
-export function handleCreateTrade(event: CreateTrade): void {}
+export function handleCreateTrade(event: CreateTrade): void {
+  let strategyToken = fetchStrategyToken(event.params._vaultId, event.params._tokenId)
+  if(strategyToken.txHash.equals(Bytes.empty())) {
+    strategyToken.txHash = event.transaction.hash
+    strategyToken.save()
+  }
+}
 
 export function handleFillOrder(event: FillOrder): void {
   const controllerView = ControllerView.bind(CONTROLLER_VIEW)
@@ -286,6 +298,7 @@ export function handleFillOrder(event: FillOrder): void {
   order.timestamp = event.block.timestamp
   order.amountOut = orderData.amounts[1].toBigDecimal().div(pricePrecision)
   order.open = false
+  order.txHash = event.transaction.hash
   order.save()
 
   let token0 = fetchERC20Meta(orderData.tokens[0])
